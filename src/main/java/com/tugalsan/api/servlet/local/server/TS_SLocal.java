@@ -104,7 +104,7 @@ public class TS_SLocal {
             return TGS_Optional.of(message);
         }, e -> {
             d.ct("read", e);
-            return TGS_Optional.ofEmpty(e);
+            return TGS_Optional.ofEmpty_NullPointerException(e);
         });
     }
 }

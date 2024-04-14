@@ -1,12 +1,12 @@
 package com.tugalsan.api.servlet.local.server;
 
 import com.tugalsan.api.log.server.TS_Log;
-import com.tugalsan.api.optional.client.TGS_Optional;
-import com.tugalsan.api.optional.client.TGS_OptionalBoolean;
 import com.tugalsan.api.runnable.client.TGS_RunnableType1;
 import com.tugalsan.api.thread.server.TS_ThreadWait;
 import com.tugalsan.api.thread.server.sync.TS_ThreadSyncTrigger;
-import com.tugalsan.api.unsafe.client.TGS_UnSafe;
+import com.tugalsan.api.union.client.TGS_UnionExcuse;
+import com.tugalsan.api.union.client.TGS_UnionExcuseVoid;
+import java.io.IOException;
 import java.net.StandardProtocolFamily;
 import java.net.UnixDomainSocketAddress;
 import java.nio.ByteBuffer;
@@ -24,33 +24,37 @@ public class TS_SLocal {
         var killTrigger = TS_ThreadSyncTrigger.of();
         var socketFile = Path.of("d:\\%s.socket".formatted(TS_SLocal.class.getName()));
         if (jobIsServer) {
-            runServer(killTrigger, socketFile, receivedText -> {
+            var server = runServer(killTrigger, socketFile, receivedText -> {
                 d.ci("main", "server", receivedText);
+            }, t -> {
+                d.ct("main.server.onExcuse", t);
             });
+            if (server.isExcuse()) {
+                d.ct("main.server", server.excuse());
+            }
         } else {
-            var op = runClient(killTrigger, socketFile, "'Msg from client!");
-            if (op.payload) {
-                d.ci("main", "client", "sent successful");
+            var client = runClient(killTrigger, socketFile, "'Msg from client!");
+            if (client.isExcuse()) {
+                d.ct("main.client", client.excuse());
             } else {
-                d.ce("main", "client", op);
+                d.ci("main", "client", "sent successful");
             }
         }
     }
 
-    private static TGS_OptionalBoolean runClient(TS_ThreadSyncTrigger threadKiller, Path socketFile, String msg) {
-        return TGS_UnSafe.call(() -> {
+    private static TGS_UnionExcuseVoid runClient(TS_ThreadSyncTrigger threadKiller, Path socketFile, String msg) {
+        try {
             var socketAddress = UnixDomainSocketAddress.of(socketFile);
             var openedChannel = SocketChannel.open(StandardProtocolFamily.UNIX);
             openedChannel.connect(socketAddress);
             return write(threadKiller, openedChannel, msg);
-        }, e -> {
-            d.ct("runClient", e);
-            return TGS_OptionalBoolean.ofFalse(e);
-        });
+        } catch (IOException ex) {
+            return TGS_UnionExcuseVoid.ofExcuse(ex);
+        }
     }
 
-    private static void runServer(TS_ThreadSyncTrigger threadKiller, Path socketFile, TGS_RunnableType1<String> receivedText) {
-        TGS_UnSafe.run(() -> {
+    private static TGS_UnionExcuseVoid runServer(TS_ThreadSyncTrigger threadKiller, Path socketFile, TGS_RunnableType1<String> receivedText, TGS_RunnableType1<Throwable> onExcuse) {
+        try {
             Files.deleteIfExists(socketFile);
             var socketAddress = UnixDomainSocketAddress.of(socketFile);
             var serverChannel = ServerSocketChannel.open(StandardProtocolFamily.UNIX);
@@ -60,51 +64,51 @@ public class TS_SLocal {
             d.ci("runServer", "accepted!");
             while (threadKiller.hasNotTriggered()) {
                 var op = read(threadKiller, acceptedChannel);
-                if (op.payload.isEmpty()) {
-                    d.ce("runServer", op.info);
-                    d.ci("runServer", "waiting for new...!");
-                    acceptedChannel = serverChannel.accept();
-                    d.ci("runServer", "new accepted!");
+                if (op.isExcuse()) {
+                    onExcuse.run(op.excuse());
                     continue;
-                } else {
-                    receivedText.run(op.payload.get());
                 }
+                receivedText.run(op.value());
                 TS_ThreadWait.milliseconds100();
+                d.ci("runServer", "waiting for new...!");
+                acceptedChannel = serverChannel.accept();
+                d.ci("runServer", "new accepted!");
             }
-        }, e -> d.ct("runServer", e));
+            return TGS_UnionExcuseVoid.ofVoid();
+        } catch (IOException ex) {
+            return TGS_UnionExcuseVoid.ofExcuse(ex);
+        }
     }
 
-    private static TGS_OptionalBoolean write(TS_ThreadSyncTrigger threadKiller, SocketChannel openedChannel, String msg) {
-        return TGS_UnSafe.call(() -> {
-            var buffer = ByteBuffer.allocate(1024);
-            buffer.clear();
-            buffer.put(msg.getBytes());
-            buffer.flip();
-            while (buffer.hasRemaining() && threadKiller.hasNotTriggered()) {
+    private static TGS_UnionExcuseVoid write(TS_ThreadSyncTrigger threadKiller, SocketChannel openedChannel, String msg) {
+        var buffer = ByteBuffer.allocate(1024);
+        buffer.clear();
+        buffer.put(msg.getBytes());
+        buffer.flip();
+        while (buffer.hasRemaining() && threadKiller.hasNotTriggered()) {
+            try {
                 openedChannel.write(buffer);
+            } catch (IOException ex) {
+                ex.printStackTrace();
             }
-            return TGS_OptionalBoolean.ofTrue();
-        }, e -> {
-            d.ct("write", e);
-            return TGS_OptionalBoolean.ofFalse(e);
-        });
+        }
+        return TGS_UnionExcuseVoid.ofVoid();
     }
 
-    private static TGS_Optional<String> read(TS_ThreadSyncTrigger threadKiller, SocketChannel channel) {
-        return TGS_UnSafe.call(() -> {
+    private static TGS_UnionExcuse<String> read(TS_ThreadSyncTrigger threadKiller, SocketChannel channel) {
+        try {
             var buffer = ByteBuffer.allocate(1024);
             var bytesRead = channel.read(buffer);
             if (bytesRead < 0) {
-                return TGS_Optional.of("");
+                return TGS_UnionExcuse.of("");
             }
             var bytes = new byte[bytesRead];
             buffer.flip();
             buffer.get(bytes);
             var message = new String(bytes);
-            return TGS_Optional.of(message);
-        }, e -> {
-            d.ct("read", e);
-            return TGS_Optional.ofEmpty_NullPointerException(e);
-        });
+            return TGS_UnionExcuse.of(message);
+        } catch (IOException ex) {
+            return TGS_UnionExcuse.ofExcuse(ex);
+        }
     }
 }

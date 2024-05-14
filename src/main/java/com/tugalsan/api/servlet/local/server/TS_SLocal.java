@@ -89,7 +89,7 @@ public class TS_SLocal {
             try {
                 openedChannel.write(buffer);
             } catch (IOException ex) {
-                ex.printStackTrace();
+                return TGS_UnionExcuseVoid.ofExcuse(ex);
             }
         }
         return TGS_UnionExcuseVoid.ofVoid();

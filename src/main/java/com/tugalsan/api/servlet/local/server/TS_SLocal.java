@@ -1,7 +1,8 @@
 package com.tugalsan.api.servlet.local.server;
 
+import com.tugalsan.api.callable.client.TGS_CallableType1Void;
 import com.tugalsan.api.log.server.TS_Log;
-import com.tugalsan.api.runnable.client.TGS_RunnableType1;
+
 import com.tugalsan.api.thread.server.TS_ThreadWait;
 import com.tugalsan.api.thread.server.sync.TS_ThreadSyncTrigger;
 import com.tugalsan.api.union.client.TGS_UnionExcuse;
@@ -53,7 +54,7 @@ public class TS_SLocal {
         }
     }
 
-    private static TGS_UnionExcuseVoid runServer(TS_ThreadSyncTrigger threadKiller, Path socketFile, TGS_RunnableType1<String> receivedText, TGS_RunnableType1<Throwable> onExcuse) {
+    private static TGS_UnionExcuseVoid runServer(TS_ThreadSyncTrigger threadKiller, Path socketFile, TGS_CallableType1Void<String> receivedText, TGS_CallableType1Void<Throwable> onExcuse) {
         try {
             Files.deleteIfExists(socketFile);
             var socketAddress = UnixDomainSocketAddress.of(socketFile);

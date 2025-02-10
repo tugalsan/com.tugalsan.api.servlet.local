@@ -1,13 +1,12 @@
 package com.tugalsan.api.servlet.local.server;
 
-import com.tugalsan.api.function.client.TGS_Func_In1;
+import com.tugalsan.api.function.client.maythrow.uncheckedexceptions.TGS_FuncMTUCE_In1;
 import com.tugalsan.api.log.server.TS_Log;
-import com.tugalsan.api.thread.server.TS_ThreadWait;
+import com.tugalsan.api.thread.server.sync.TS_ThreadSyncWait;
 import com.tugalsan.api.thread.server.sync.TS_ThreadSyncTrigger;
 import com.tugalsan.api.union.client.TGS_UnionExcuse;
 import com.tugalsan.api.union.client.TGS_UnionExcuseVoid;
-import com.tugalsan.api.unsafe.client.TGS_UnSafe;
-import java.io.IOException;
+import com.tugalsan.api.function.client.maythrow.checkedexceptions.TGS_FuncMTCEUtils;
 import java.net.StandardProtocolFamily;
 import java.net.UnixDomainSocketAddress;
 import java.nio.ByteBuffer;
@@ -44,7 +43,7 @@ public class TS_SLocal {
     }
 
     private static TGS_UnionExcuseVoid runClient(TS_ThreadSyncTrigger threadKiller, Path socketFile, String msg) {
-        return TGS_UnSafe.call(() -> {
+        return TGS_FuncMTCEUtils.call(() -> {
             var socketAddress = UnixDomainSocketAddress.of(socketFile);
             var openedChannel = SocketChannel.open(StandardProtocolFamily.UNIX);
             openedChannel.connect(socketAddress);
@@ -52,8 +51,8 @@ public class TS_SLocal {
         }, e -> TGS_UnionExcuseVoid.ofExcuse(e));
     }
 
-    private static TGS_UnionExcuseVoid runServer(TS_ThreadSyncTrigger threadKiller, Path socketFile, TGS_Func_In1<String> receivedText, TGS_Func_In1<Throwable> onExcuse) {
-        return TGS_UnSafe.call(() -> {
+    private static TGS_UnionExcuseVoid runServer(TS_ThreadSyncTrigger threadKiller, Path socketFile, TGS_FuncMTUCE_In1<String> receivedText, TGS_FuncMTUCE_In1<Throwable> onExcuse) {
+        return TGS_FuncMTCEUtils.call(() -> {
             Files.deleteIfExists(socketFile);
             var socketAddress = UnixDomainSocketAddress.of(socketFile);
             var serverChannel = ServerSocketChannel.open(StandardProtocolFamily.UNIX);
@@ -68,7 +67,7 @@ public class TS_SLocal {
                     continue;
                 }
                 receivedText.run(op.value());
-                TS_ThreadWait.milliseconds100();
+                TS_ThreadSyncWait.milliseconds100();
                 d.ci("runServer", "waiting for new...!");
                 acceptedChannel = serverChannel.accept();
                 d.ci("runServer", "new accepted!");
@@ -78,7 +77,7 @@ public class TS_SLocal {
     }
 
     private static TGS_UnionExcuseVoid write(TS_ThreadSyncTrigger threadKiller, SocketChannel openedChannel, String msg) {
-        return TGS_UnSafe.call(() -> {
+        return TGS_FuncMTCEUtils.call(() -> {
             var buffer = ByteBuffer.allocate(1024);
             buffer.clear();
             buffer.put(msg.getBytes());
@@ -92,7 +91,7 @@ public class TS_SLocal {
 
     @Deprecated //I DONT UNDERSTANT, WHERE WHILE
     private static TGS_UnionExcuse<String> read(TS_ThreadSyncTrigger threadKiller, SocketChannel channel) {
-        return TGS_UnSafe.call(() -> {
+        return TGS_FuncMTCEUtils.call(() -> {
             var buffer = ByteBuffer.allocate(1024);
             var bytesRead = channel.read(buffer);
             if (bytesRead < 0) {

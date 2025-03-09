@@ -21,7 +21,7 @@ public class TS_SLocal {
 
     public static void main(String... s) {
         var jobIsServer = false;
-        var killTrigger = TS_ThreadSyncTrigger.of();
+        var killTrigger = TS_ThreadSyncTrigger.of("main");
         var socketFile = Path.of("d:\\%s.socket".formatted(TS_SLocal.class.getName()));
         if (jobIsServer) {
             var server = runServer(killTrigger, socketFile, receivedText -> {

@@ -16,6 +16,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 public class TS_SLocal {
+    
+    private TS_SLocal(){
+        
+    }
 
     final private static TS_Log d = TS_Log.of(true, TS_SLocal.class);
 
